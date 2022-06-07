@@ -223,18 +223,33 @@ class IOCContainerSpecs: QuickSpec {
                 expect(a2.b2).notTo(beNil())
             }
 
-            it("should handle circular dependent objects gracefully i.e. bail at certain recursion depth") {
+            it("should throw error when handling circular dependent objects") {
+                var containerError : IOCContainer.ContainerError? = nil
                 container.register { [weak container] () -> A3 in
-                    let b3 : B3? = try? container?.resolve()
+                    var b3 : B3?
+                    do {
+                        let newB3 : B3 = try container!.resolve()
+                        b3 = newB3
+                    }
+                    catch let error as IOCContainer.ContainerError {
+                        containerError = error
+                    }
+                    catch {}
                     return A3(b3: b3)
                 }
                 container.register { [weak container] () -> B3  in
-                    let a3 : A3? = try? container?.resolve()
+                    var a3 : A3?
+                    do {
+                        let newA3 : A3 = try container!.resolve()
+                        a3 = newA3
+                    }
+                    catch {}
                     expect(a3).notTo(beNil())
                     return B3(a3: a3)
                 }
                 let a3 : A3 = try! container.resolve()
                 expect(a3).notTo(beNil())
+                expect(containerError) == IOCContainer.ContainerError.recursion
 
             }
         }
