@@ -75,31 +75,31 @@ class IOCContainerSpecs: QuickSpec {
             it("should successfully register closure with a reference type") {
               
                 container.register { A() }
-                let value = try! container.resolve(type:A.self)
+                let value : A? = try! container.resolve()
                 expect(value).notTo(beNil())
             }
             
             it("should successfully register closure with a value type") {
-              
+
                 container.register { SA() }
-                let value = try! container.resolve(type:SA.self)
+                let value : SA? = try! container.resolve()
                 expect(value).notTo(beNil())
             }
-            
-            
+
+
             it ("should return classes for registered types") {
-              
+
                 container.register { A() }
-                    
-                let value = try! container.resolve(type:A.self)!
+
+                let value : A = try! container.resolve()!
                 expect(type(of: value)) === A.self
             }
-            
+
             it ("should return nil for unregistereed types") {
-              
+
                 container.register { A() }
-                   
-                let value = try! container.resolve(type:B.self)
+
+                let value : B? = try! container.resolve()
                 expect(value).to(beNil())
             }
         }
@@ -108,119 +108,128 @@ class IOCContainerSpecs: QuickSpec {
         
         context("when working with scope") {
             it("should return differenct objects when specifying a unique scope (reference type)") {
-                container.register(scope:.unique) { A() }
-                  
-                let value1 = try! container.resolve(type:A.self)
-                let value2 = try! container.resolve(type:A.self)
+                container.register { A() }
+
+                let value1 : A? = try! container.resolve()
+                let value2 : A? = try! container.resolve()
                 expect(value1) !== value2
             }
-            
+
             it("should return differenct objects when specifying a unique scope (value type)") {
-                container.register(scope:.unique) { SA() }
-                    
-                let value1 = try! container.resolve(type:SA.self)
-                let value2 = try! container.resolve(type:SA.self)
+                container.register { SA() }
+
+                let value1 : SA? = try! container.resolve()
+                let value2 : SA? = try! container.resolve()
                 expect(value1) != value2
             }
-            
+
             it("should return the same object when specifying a scope of shared (reference type)") {
-                container.register(scope:.shared) {  A() }
-                  
-                let value1 = try! container.resolve(type:A.self)
-                let value2 = try! container.resolve(type:A.self)
+                container.register { A() }
+
+                let value1 : A? = try! container.resolve(scope: .shared)
+                let value2 : A? = try! container.resolve(scope: .shared)
                 expect(value1) === value2
             }
-            
+
             it("should return the same object when specifying a scope of shared (value type)") {
-                container.register(scope:.shared) { SA() }
-              
-                let value1 = try! container.resolve(type:SA.self)
-                let value2 = try! container.resolve(type:SA.self)
+                container.register { SA() }
+
+                let value1 : SA? = try! container.resolve(scope: .shared)
+                let value2 : SA? = try! container.resolve(scope: .shared)
                 expect(value1) == value2
             }
             
+            it("should return unique or shared instanced for the same registered type") {
+                container.register { SA() }
+
+                let value1 : SA? = try! container.resolve(scope: .shared)
+                let value2 : SA? = try! container.resolve(scope: .shared)
+                expect(value1) == value2
+                
+                let value3 : SA? = try! container.resolve(scope:.unique)
+                expect(value3) != value1
+            }
+
             it ("should default to unique scope when scope is not provided") {
                 container.register { A() }
-               
-                let value1 = try! container.resolve(type:A.self)
-                let value2 = try! container.resolve(type:A.self)
+
+                let value1 : A? = try! container.resolve()
+                let value2 : A? = try! container.resolve()
                 expect(value1) !== value2
             }
-            
-            
+
+
             it("should retain a shared object when specifying a scope of shared") {
                 var aValue = A()
-                container.register(scope:.shared) { () -> A in
+                container.register { () -> A in
                     return aValue
                 }
                 let b = B()
-                b.a = try! container.resolve(type:A.self)
+                b.a = try! container.resolve(scope: .shared) as A?
                 expect(b.a) === aValue
                 expect(b.a).notTo(beNil())
                 aValue = A()
                 expect(b.a).notTo(beNil())
             }
         }
-        
+
         context("when calling deregister") {
             it("should successfully unregister closures with scope unique") {
-              
-                container.register(scope:.unique) {
-                    return A()
-                }
+
+                container.register { A() }
                 container.deregister(type:A.self)
-                let value = try! container.resolve(type:A.self)
+                let value : A? = try! container.resolve()
                 expect(value).to(beNil())
             }
-          
+
             it("should successfully unregister closures with scope shared ") {
                 var aValue1 : A? = A()
-                let aValue2 : A = A()
+                let aValue2 = A()
 
-                container.register(scope:.shared) {
+                container.register {
                     return aValue1 ?? aValue2
                 }
-                weak var weakA = try! container.resolve(type:A.self)
+                weak var weakA : A? = try! container.resolve(scope:.shared)
                 aValue1 = nil
                 container.deregister(type:A.self)
                 expect(weakA).to(beNil())
             }
         }
-        
+
         context("when instantiating objects") {
             it("should succesfully instantiate simple objects") {
                 container.register { A() }
-               
-                let a = try! container.resolve(type: A.self)
+
+                let a : A? = try! container.resolve()
                 expect(a).notTo(beNil())
             }
-            
+
             it("should successfully instantiate dependent objects e.g A has dependency of B") {
                 container.register { B2() }
-                
+
                 container.register() { [weak container] () -> A2 in
-                    let b2 = try! container?.resolve(type: B2.self)
+                    let b2 : B2? = try! container?.resolve()
                     expect(b2).notTo(beNil())
                     return A2(b2: b2)
                 }
-                let a2 = try! container.resolve(type: A2.self)
+                let a2 : A2? = try! container.resolve()
                 expect(a2).notTo(beNil())
                 expect(a2?.b2).notTo(beNil())
             }
-            
+
             it("should handle circular dependent objects gracefully i.e. bail at certain recursion depth") {
                 container.register { [weak container] () -> A3 in
-                    let b3 = try? container?.resolve(type: B3.self)
+                    let b3 : B3? = try? container?.resolve()
                     return A3(b3: b3)
                 }
                 container.register { [weak container] () -> B3  in
-                    let a3 = try? container?.resolve(type: A3.self)
+                    let a3 : A3? = try? container?.resolve()
                     expect(a3).notTo(beNil())
                     return B3(a3: a3)
                 }
-                let a3 = try! container.resolve(type: A3.self)
+                let a3 : A3? = try! container.resolve()
                 expect(a3).notTo(beNil())
-  
+
             }
         }
     }

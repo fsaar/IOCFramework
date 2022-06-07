@@ -20,7 +20,7 @@ public class IOCContainer {
     
     private var resolverRecursionCount = 0
     public typealias ClassResolverBlock = () -> Any
-    private var blockStorage : [String:(block:ClassResolverBlock,scope:Scope)] = [:]
+    private var blockStorage : [String:ClassResolverBlock] = [:]
     private var singletonStorage : [String:Any] = [:]
 
     
@@ -28,21 +28,20 @@ public class IOCContainer {
     
     /// Registers Type with IOCContainer. Type will be inferred from closure return type.
     ///
-    /// - Parameters:
-    ///     - scope: scope of registration: .unique (default) or .shared
     ///     - block: closure to instantiate type when requested (see resolve)
-    public func register<T>(scope : Scope = .unique,block: @escaping () -> T ) {
+    public func register<T>(block: @escaping () -> T ) {
         let identifier = key(for: T.self)
-        blockStorage[identifier] = (block,scope)
+        blockStorage[identifier] = block
     }
     
     /// Resolves registered type
-    ///
+
     /// - Parameters:
-    ///     - type: type of class to resolve
+    ///     - scope: .unique to always return new instance or .shared to return a previously resolved shared instance
+    ///
     /// - Returns: instantiate class or nil of no class registered
     /// - Throws: 'ContainerError.recursion' when max recursion depth has been reached
-    public func resolve<T>(type : T.Type) throws -> T? {
+    public func resolve<T>(scope : Scope = .unique) throws -> T? {
         resolverRecursionCount += 1
         defer {
             resolverRecursionCount -= 1
@@ -50,20 +49,20 @@ public class IOCContainer {
         guard resolverRecursionCount < MaxRecursionDepth else {
             throw ContainerError.recursion
         }
-        let identifier = key(for: type)
-        guard let tuple = blockStorage[identifier] else {
+        let identifier = key(for: T.self)
+        guard let block = blockStorage[identifier] else {
             return nil
         }
         
-        switch tuple.scope {
+        switch scope {
         case .unique:
-            let newInstance = tuple.block() as? T
+            let newInstance = block() as? T
             return newInstance
         case .shared:
             if let instance = singletonStorage[identifier] as? T {
                 return instance
             }
-            guard let newInstance = tuple.block() as? T else {
+            guard let newInstance = block() as? T else {
                 return nil
             }
             singletonStorage[identifier] = newInstance
