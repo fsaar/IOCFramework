@@ -26,7 +26,7 @@ public class IOCContainer {
     
     public init() {}
     
-    /// Registers Type with IOCContainer
+    /// Registers Type with IOCContainer. Type will be inferred from closure return type.
     ///
     /// - Parameters:
     ///     - scope: scope of registration: .unique (default) or .shared
