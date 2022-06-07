@@ -1,6 +1,6 @@
 //
-//  IOCContainer.swift
-//  iocApp
+//  IOCFramework.swift
+//  IOCFramework
 //
 //  Created by Frank Saar on 07/06/2022.
 //
