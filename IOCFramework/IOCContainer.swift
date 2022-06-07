@@ -41,7 +41,7 @@ public class IOCContainer {
     /// - Parameters:
     ///     - scope: .unique to always return new instance or .shared to return a previously resolved shared instance
     ///
-    /// - Returns: instantiate class or nil of no class registered
+    /// - Returns: instantiated class of requested Type
     /// - Throws: 'ContainerError.recursion' when max recursion depth has been reached
     public func resolve<T>(scope : Scope = .unique) throws -> T {
         resolverRecursionCount += 1
