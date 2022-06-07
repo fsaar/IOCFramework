@@ -74,14 +74,14 @@ class IOCContainerSpecs: QuickSpec {
         context("when calling container instance") {
             it("should successfully register closure with a reference type") {
               
-                container.register() { A() }
+                container.register { A() }
                 let value = try! container.resolve(type:A.self)
                 expect(value).notTo(beNil())
             }
             
             it("should successfully register closure with a value type") {
               
-                container.register() { SA() }
+                container.register { SA() }
                 let value = try! container.resolve(type:SA.self)
                 expect(value).notTo(beNil())
             }
@@ -89,18 +89,16 @@ class IOCContainerSpecs: QuickSpec {
             
             it ("should return classes for registered types") {
               
-                container.register() {
-                    return A()
-                }
+                container.register { A() }
+                    
                 let value = try! container.resolve(type:A.self)!
                 expect(type(of: value)) === A.self
             }
             
             it ("should return nil for unregistereed types") {
               
-                container.register() {
-                    return A()
-                }
+                container.register { A() }
+                   
                 let value = try! container.resolve(type:B.self)
                 expect(value).to(beNil())
             }
@@ -110,45 +108,40 @@ class IOCContainerSpecs: QuickSpec {
         
         context("when working with scope") {
             it("should return differenct objects when specifying a unique scope (reference type)") {
-                container.register(scope:.unique) {
-                    return A()
-                }
+                container.register(scope:.unique) { A() }
+                  
                 let value1 = try! container.resolve(type:A.self)
                 let value2 = try! container.resolve(type:A.self)
                 expect(value1) !== value2
             }
             
             it("should return differenct objects when specifying a unique scope (value type)") {
-                container.register(scope:.unique) {
-                    return SA()
-                }
+                container.register(scope:.unique) { SA() }
+                    
                 let value1 = try! container.resolve(type:SA.self)
                 let value2 = try! container.resolve(type:SA.self)
                 expect(value1) != value2
             }
             
             it("should return the same object when specifying a scope of shared (reference type)") {
-                container.register(scope:.shared) {
-                    return A()
-                }
+                container.register(scope:.shared) {  A() }
+                  
                 let value1 = try! container.resolve(type:A.self)
                 let value2 = try! container.resolve(type:A.self)
                 expect(value1) === value2
             }
             
             it("should return the same object when specifying a scope of shared (value type)") {
-                container.register(scope:.shared) {
-                    return SA()
-                }
+                container.register(scope:.shared) { SA() }
+              
                 let value1 = try! container.resolve(type:SA.self)
                 let value2 = try! container.resolve(type:SA.self)
                 expect(value1) == value2
             }
             
             it ("should default to unique scope when scope is not provided") {
-                container.register() {
-                    return A()
-                }
+                container.register { A() }
+               
                 let value1 = try! container.resolve(type:A.self)
                 let value2 = try! container.resolve(type:A.self)
                 expect(value1) !== value2
@@ -196,17 +189,15 @@ class IOCContainerSpecs: QuickSpec {
         
         context("when instantiating objects") {
             it("should succesfully instantiate simple objects") {
-                container.register() {
-                    return A()
-                }
+                container.register { A() }
+               
                 let a = try! container.resolve(type: A.self)
                 expect(a).notTo(beNil())
             }
             
             it("should successfully instantiate dependent objects e.g A has dependency of B") {
-                container.register() {
-                    return B2()
-                }
+                container.register { B2() }
+                
                 container.register() { [weak container] () -> A2 in
                     let b2 = try! container?.resolve(type: B2.self)
                     expect(b2).notTo(beNil())
@@ -218,11 +209,11 @@ class IOCContainerSpecs: QuickSpec {
             }
             
             it("should handle circular dependent objects gracefully i.e. bail at certain recursion depth") {
-                container.register() { [weak container] () -> A3 in
+                container.register { [weak container] () -> A3 in
                     let b3 = try? container?.resolve(type: B3.self)
                     return A3(b3: b3)
                 }
-                container.register() { [weak container] () -> B3  in
+                container.register { [weak container] () -> B3  in
                     let a3 = try? container?.resolve(type: A3.self)
                     expect(a3).notTo(beNil())
                     return B3(a3: a3)
