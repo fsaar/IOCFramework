@@ -8,6 +8,7 @@
 import Foundation
 
 public class IOCContainer {
+    private let MaxRecursionDepth = 10
     public enum ContainerError : Error {
         case recursion
     }
@@ -25,17 +26,29 @@ public class IOCContainer {
     
     public init() {}
     
+    /// Registers Type with IOCContainer
+    ///
+    /// - Parameters:
+    ///     - type: type of class to register
+    ///     - scope: scope of registration: .unique (default) or .shared
+    ///     - block: closure to instantiate type when requested (see resolve)
     public func register<T>(type : T.Type, scope : Scope = .unique,block: @escaping ClassResolverBlock ) {
         let identifier = key(for: type)
         blockStorage[identifier] = (block,scope)
     }
     
+    /// Resolves registered type
+    ///
+    /// - Parameters:
+    ///     - type: type of class to resolve
+    /// - Returns: instantiate class or nil of no class registered
+    /// - Throws: 'ContainerError.recursion' when max recursion depth has been reached
     public func resolve<T>(type : T.Type) throws -> T? {
         resolverRecursionCount += 1
         defer {
             resolverRecursionCount -= 1
         }
-        guard resolverRecursionCount < 10 else {
+        guard resolverRecursionCount < MaxRecursionDepth else {
             throw ContainerError.recursion
         }
         let identifier = key(for: type)
@@ -59,6 +72,10 @@ public class IOCContainer {
         }
     }
     
+    /// Deregisters previously registered type
+    ///
+    /// - Parameters:
+    ///     - type: type of class to deregister
     public func deregister<T>(type : T.Type)  {
         let identifier = String(describing: T.self)
         blockStorage[identifier] = nil
