@@ -29,6 +29,7 @@ public class IOCContainer {
     /// Registers Type with IOCContainer
     ///
     /// - Parameters:
+    ///     - type: type of class to register
     ///     - scope: scope of registration: .unique (default) or .shared
     ///     - block: closure to instantiate type when requested (see resolve)
     public func register<T>(scope : Scope = .unique,block: @escaping () -> T ) {
