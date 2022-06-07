@@ -22,6 +22,9 @@ public class IOCContainer {
     private var blockStorage : [String:(block:ClassResolverBlock,scope:Scope)] = [:]
     private var singletonStorage : [String:Any] = [:]
 
+    
+    public init() {}
+    
     public func register<T>(type : T.Type, scope : Scope = .unique,block: @escaping ClassResolverBlock ) {
         let identifier = key(for: type)
         blockStorage[identifier] = (block,scope)
