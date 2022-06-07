@@ -11,6 +11,8 @@ public class IOCContainer {
     private let MaxRecursionDepth = 10
     public enum ContainerError : Error {
         case recursion
+        case noPriorRegistration
+        case consistencyError
     }
     
     public enum Scope  {
@@ -41,7 +43,7 @@ public class IOCContainer {
     ///
     /// - Returns: instantiate class or nil of no class registered
     /// - Throws: 'ContainerError.recursion' when max recursion depth has been reached
-    public func resolve<T>(scope : Scope = .unique) throws -> T? {
+    public func resolve<T>(scope : Scope = .unique) throws -> T {
         resolverRecursionCount += 1
         defer {
             resolverRecursionCount -= 1
@@ -51,19 +53,21 @@ public class IOCContainer {
         }
         let identifier = key(for: T.self)
         guard let block = blockStorage[identifier] else {
-            return nil
+            throw ContainerError.noPriorRegistration
         }
         
         switch scope {
         case .unique:
-            let newInstance = block() as? T
+            guard let newInstance = block() as? T else {
+                throw ContainerError.consistencyError
+            }
             return newInstance
         case .shared:
             if let instance = singletonStorage[identifier] as? T {
                 return instance
             }
             guard let newInstance = block() as? T else {
-                return nil
+                throw ContainerError.consistencyError
             }
             singletonStorage[identifier] = newInstance
             return newInstance
