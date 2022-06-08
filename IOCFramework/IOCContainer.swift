@@ -13,6 +13,7 @@ public class IOCContainer {
         case recursion
         case noPriorRegistration
         case consistencyError
+        case typeRegistered
     }
     
     public enum Scope  {
@@ -33,8 +34,12 @@ public class IOCContainer {
     /// - Parameters:
     ///     - identifier: optional identifier to use for registered type
     ///     - block: closure to instantiate type when requested (see resolve)
-    public func register<T>(identifier: String? = nil, block: @escaping () -> T ) {
+    /// - Throws: 'ContainerError.typeRegistered' when type already registered / identifier already used
+    public func register<T>(identifier: String? = nil, block: @escaping () -> T ) throws {
         let identifier = key(with:identifier,for: T.self)
+        guard case .none =  blockStorage[identifier] else {
+            throw ContainerError.typeRegistered
+        }
         blockStorage[identifier] = block
     }
     
