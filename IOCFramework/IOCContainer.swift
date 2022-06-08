@@ -30,20 +30,23 @@ public class IOCContainer {
     
     /// Registers Type with IOCContainer. Type will be inferred from closure return type.
     ///
+    /// - Parameters:
+    ///     - identifier: optional identifier to use for registered type
     ///     - block: closure to instantiate type when requested (see resolve)
-    public func register<T>(block: @escaping () -> T ) {
-        let identifier = key(for: T.self)
+    public func register<T>(identifier: String? = nil, block: @escaping () -> T ) {
+        let identifier = key(with:identifier,for: T.self)
         blockStorage[identifier] = block
     }
     
     /// Resolves registered type
 
     /// - Parameters:
+    ///     - identifier: optional identifier to use for registered type
     ///     - scope: .unique to always return new instance or .shared to return a previously resolved shared instance
     ///
     /// - Returns: instantiated class of requested Type
     /// - Throws: 'ContainerError.recursion' when max recursion depth has been reached
-    public func resolve<T>(scope : Scope = .unique) throws -> T {
+    public func resolve<T>(identifier: String? = nil,scope : Scope = .unique) throws -> T {
         resolverRecursionCount += 1
         defer {
             resolverRecursionCount -= 1
@@ -51,7 +54,7 @@ public class IOCContainer {
         guard resolverRecursionCount < MaxRecursionDepth else {
             throw ContainerError.recursion
         }
-        let identifier = key(for: T.self)
+        let identifier = key(with:identifier,for: T.self)
         guard let block = blockStorage[identifier] else {
             throw ContainerError.noPriorRegistration
         }
@@ -77,9 +80,10 @@ public class IOCContainer {
     /// Deregisters previously registered type
     ///
     /// - Parameters:
+    ///     - identifier: optional identifier to use for registered type
     ///     - type: type of class to deregister
-    public func deregister<T>(type : T.Type)  {
-        let identifier = String(describing: T.self)
+    public func deregister<T>(identifier: String? = nil,type : T.Type)  {
+        let identifier = key(with:identifier,for: T.self)
         blockStorage[identifier] = nil
         singletonStorage[identifier] = nil
 
@@ -88,7 +92,10 @@ public class IOCContainer {
 
 fileprivate extension IOCContainer {
     
-    func key<T>(for type:T.Type) -> String {
-        return String(describing: T.self)
+    func key<T>(with identifier: String? = nil,for type:T.Type) -> String {
+        guard let identifier = identifier,!identifier.isEmpty else {
+            return String(describing: T.self)
+        }
+        return identifier
     }
 }

@@ -71,7 +71,13 @@ class IOCContainerSpecs: QuickSpec {
         }
 
         
-        context("when calling container instance") {
+        context("when registering instance") {
+            it("should register type under identifier if provided") {
+                container.register(identifier: "classA") { A() }
+                let value : A = try! container.resolve(identifier:"classA")
+                expect(value).notTo(beNil())
+            }
+            
             it("should successfully register closure with a reference type") {
               
                 container.register { A() }
@@ -176,6 +182,14 @@ class IOCContainerSpecs: QuickSpec {
         }
 
         context("when calling deregister") {
+            it("should successfully unregister types with identifier") {
+                container.register(identifier:"classA") { A() }
+                container.deregister(identifier:"classA",type:A.self)
+                expect {
+                    let value : A = try container.resolve()
+                    expect(value).to(beNil())
+                }.to(throwError(IOCContainer.ContainerError.noPriorRegistration))
+            }
             it("should successfully unregister closures with scope unique") {
 
                 container.register { A() }
@@ -225,11 +239,10 @@ class IOCContainerSpecs: QuickSpec {
 
             it("should throw error when handling circular dependent objects") {
                 var containerError : IOCContainer.ContainerError? = nil
-                container.register { [weak container] () -> A3 in
+                container.register(identifier:"classA") { [weak container] () -> A3 in
                     var b3 : B3?
                     do {
-                        let newB3 : B3 = try container!.resolve()
-                        b3 = newB3
+                        b3 = try container!.resolve(identifier:"classB")
                     }
                     catch let error as IOCContainer.ContainerError {
                         containerError = error
@@ -237,17 +250,16 @@ class IOCContainerSpecs: QuickSpec {
                     catch {}
                     return A3(b3: b3)
                 }
-                container.register { [weak container] () -> B3  in
+                container.register(identifier:"classB") { [weak container] () -> B3  in
                     var a3 : A3?
                     do {
-                        let newA3 : A3 = try container!.resolve()
-                        a3 = newA3
+                        a3 = try container!.resolve(identifier:"classA")
                     }
                     catch {}
                     expect(a3).notTo(beNil())
                     return B3(a3: a3)
                 }
-                let a3 : A3 = try! container.resolve()
+                let a3 : A3 = try! container.resolve(identifier:"classA")
                 expect(a3).notTo(beNil())
                 expect(containerError) == IOCContainer.ContainerError.recursion
 
